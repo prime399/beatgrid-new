@@ -43,6 +43,13 @@ func damage_in_line(start: Vector2, end: Vector2, hit_radius: float, damage: int
 	for e in to_remove:
 		enemies.erase(e)
 
+func repel_from_line(a: Vector2, b: Vector2, thickness: float, push_dir: Vector2, _push_force: float, delta: float):
+	var push_dist = 48.0 * 2.5
+	for e in enemies:
+		var dist = _point_to_segment_dist(e.pos, a, b)
+		if dist < thickness + e.size:
+			e.pos += push_dir.normalized() * push_dist * delta / 0.35
+
 func _point_to_segment_dist(p: Vector2, a: Vector2, b: Vector2) -> float:
 	var ab = b - a
 	var len_sq = ab.length_squared()

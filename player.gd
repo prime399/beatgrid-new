@@ -11,17 +11,32 @@ const LASER_DAMAGE = 1
 const LASER_HIT_RADIUS = 20.0
 const LASER_FADE_TIME = 0.3
 
+const SHIELD_MIN_W = 40.0
+const SHIELD_MAX_W = 180.0
+const SHIELD_TRAVEL = 500.0
+const SHIELD_DURATION = 01.25
+const SHIELD_PUSH = 500.0
+const SHIELD_HIT_THICKNESS = 25.0
+
 var laser_active: bool = false
 var laser_start: Vector2
 var laser_end: Vector2
 var laser_timer: float = 0.0
 
+var shield_active: bool = false
+var shield_timer: float = 0.0
+var shield_dir: Vector2
+var shield_origin: Vector2
+
 func _ready() -> void:
 	position = Vector2(MAP_W / 2.0, MAP_H / 2.0)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.keycode == KEY_A and event.pressed and not event.echo:
-		_fire_laser()
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_A:
+			_fire_laser()
+		elif event.keycode == KEY_S and not shield_active:
+			_fire_shield()
 
 func _fire_laser():
 	var mouse_world = get_global_mouse_position()
@@ -39,6 +54,26 @@ func _fire_laser():
 
 	var enemies_node = get_node("../Enemies")
 	enemies_node.damage_in_line(laser_start, laser_end, LASER_HIT_RADIUS, LASER_DAMAGE)
+
+func _fire_shield():
+	var mouse_world = get_global_mouse_position()
+	var dir = (mouse_world - position)
+	if dir.length() < 1.0:
+		return
+	shield_dir = dir.normalized()
+	shield_origin = position + shield_dir * 20.0
+	shield_active = true
+	shield_timer = 0.0
+
+func _get_shield_state(t: float) -> Dictionary:
+	var travel_pos = shield_origin + shield_dir * SHIELD_TRAVEL * t
+	var half_w = lerp(SHIELD_MIN_W, SHIELD_MAX_W, t) * 0.5
+	var perp = Vector2(-shield_dir.y, shield_dir.x)
+	return {
+		"center": travel_pos,
+		"a": travel_pos + perp * half_w,
+		"b": travel_pos - perp * half_w,
+	}
 
 func _process(delta: float) -> void:
 	var dir := Vector2.ZERO
@@ -61,6 +96,16 @@ func _process(delta: float) -> void:
 		laser_timer -= delta
 		if laser_timer <= 0.0:
 			laser_active = false
+
+	if shield_active:
+		shield_timer += delta
+		var t = shield_timer / SHIELD_DURATION
+		if t >= 1.0:
+			shield_active = false
+		else:
+			var state = _get_shield_state(t)
+			get_node("../Enemies").repel_from_line(
+				state.a, state.b, SHIELD_HIT_THICKNESS, shield_dir, SHIELD_PUSH, delta)
 
 	queue_redraw()
 
@@ -107,3 +152,13 @@ func _draw() -> void:
 		draw_line(local_start, local_end, Color(0.2, 0.5, 1.0, alpha * 0.3), 12.0)
 		draw_line(local_start, local_end, Color(0.4, 0.7, 1.0, alpha * 0.6), 4.0)
 		draw_line(local_start, local_end, Color(0.8, 0.9, 1.0, alpha), 1.5)
+
+	if shield_active:
+		var t = shield_timer / SHIELD_DURATION
+		var state = _get_shield_state(t)
+		var alpha = 1.0 - t
+		var la = state.a - position
+		var lb = state.b - position
+		draw_line(la, lb, Color(0.3, 0.8, 1.0, alpha * 0.15), 20.0)
+		draw_line(la, lb, Color(0.4, 0.85, 1.0, alpha * 0.5), 6.0)
+		draw_line(la, lb, Color(0.7, 0.95, 1.0, alpha), 2.0)
