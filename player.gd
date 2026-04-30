@@ -9,7 +9,7 @@ const CORNER_R = 95.0
 
 const LASER_DAMAGE = 1
 const LASER_HIT_RADIUS = 20.0
-const LASER_FADE_TIME = 0.3
+const LASER_FADE_TIME = 0.7
 
 const SHIELD_MIN_W = 40.0
 const SHIELD_MAX_W = 180.0
@@ -24,8 +24,7 @@ const MAX_HP = MAX_BARS * HP_PER_BAR
 const INVULN_TIME = 0.8
 
 var laser_active: bool = false
-var laser_start: Vector2
-var laser_end: Vector2
+var laser_segments: Array = []
 var laser_timer: float = 0.0
 
 var shield_active: bool = false
@@ -59,15 +58,15 @@ func _fire_laser():
 	if dist < 1.0:
 		return
 	dir = dir.normalized()
-	laser_start = position + dir * 15.0
-	laser_end = position + dir * dist
+	var start = position + dir * 15.0
+	var end = position + dir * dist
 	laser_active = true
 	laser_timer = LASER_FADE_TIME
 
-	get_node("../Grid").set_laser(laser_start, laser_end, LASER_FADE_TIME)
-
 	var enemies_node = get_node("../Enemies")
-	enemies_node.damage_in_line(laser_start, laser_end, LASER_HIT_RADIUS, LASER_DAMAGE)
+	laser_segments = enemies_node.chain_laser(start, end, LASER_HIT_RADIUS, LASER_DAMAGE)
+
+	get_node("../Grid").set_chain_laser(laser_segments, LASER_FADE_TIME)
 
 func _fire_shield():
 	var mouse_world = get_global_mouse_position()
@@ -166,11 +165,17 @@ func _draw() -> void:
 
 	if laser_active:
 		var alpha = laser_timer / LASER_FADE_TIME
-		var local_start = laser_start - position
-		var local_end = laser_end - position
-		draw_line(local_start, local_end, Color(0.2, 0.5, 1.0, alpha * 0.3), 12.0)
-		draw_line(local_start, local_end, Color(0.4, 0.7, 1.0, alpha * 0.6), 4.0)
-		draw_line(local_start, local_end, Color(0.8, 0.9, 1.0, alpha), 1.5)
+		for seg in laser_segments:
+			var ls = seg.from - position
+			var le = seg.to - position
+			draw_line(ls, le, Color(0.2, 0.5, 1.0, alpha * 0.3), 12.0)
+			draw_line(ls, le, Color(0.4, 0.7, 1.0, alpha * 0.6), 4.0)
+			draw_line(ls, le, Color(0.8, 0.9, 1.0, alpha), 1.5)
+		for i in range(1, laser_segments.size()):
+			var hit_pos = laser_segments[i].from - position
+			var ring_alpha = alpha * 0.8
+			draw_arc(hit_pos, 15.0 * (1.0 + (1.0 - alpha) * 0.5), 0, TAU, 16, Color(0.5, 0.8, 1.0, ring_alpha * 0.4), 3.0)
+			draw_arc(hit_pos, 8.0, 0, TAU, 12, Color(0.8, 0.95, 1.0, ring_alpha), 2.0)
 
 	if shield_active:
 		var t = shield_timer / SHIELD_DURATION

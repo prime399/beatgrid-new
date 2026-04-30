@@ -27,7 +27,7 @@ script = ExtResource("1_0fbet")
 script = ExtResource("2_62e2m")
 
 [node name="Enemies" type="Node2D" parent="." unique_id=1820971810]
-position = Vector2(-4, 5)
+position = Vector2(-7, 5)
 script = ExtResource("3_ee4bf")
 
 [node name="Player" type="Node2D" parent="." unique_id=640842919]
