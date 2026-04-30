@@ -4,7 +4,7 @@ extends Node2D
 const CELL_SIZE      = 48
 const BASE_COLOR     = Color(0.055, 0.055, 0.157, 1.0)
 const GLOW_COLOR     = Color(1.0, 0.902, 0.314, 1.0)
-const INFLUENCE_CELLS = 6
+const INFLUENCE_RADIUS = 20.0
 const MAP_W          = 3200.0
 const MAP_H          = 2400.0
 
@@ -33,14 +33,11 @@ func _draw():
 					  _get_line_color(mid), 1.0)
 
 func _get_line_color(segment_mid: Vector2) -> Color:
-	var player_cell = (player_pos / CELL_SIZE).floor()
-	var seg_cell    = (segment_mid / CELL_SIZE).floor()
-	var dist        = max(abs(seg_cell.x - player_cell.x),
-						  abs(seg_cell.y - player_cell.y))
-	if dist >= INFLUENCE_CELLS:
+	var dist = segment_mid.distance_to(player_pos) / CELL_SIZE
+	if dist >= INFLUENCE_RADIUS:
 		return BASE_COLOR
-	var t = 1.0 - (float(dist) / INFLUENCE_CELLS)
-	t     = pow(t, 1.6)
+	var t = 1.0 - (dist / INFLUENCE_RADIUS)
+	t = t * t * t
 	return BASE_COLOR.lerp(GLOW_COLOR, t)
 
 func update_player_pos(pos: Vector2):

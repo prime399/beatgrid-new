@@ -32,7 +32,8 @@ script = ExtResource("3_ee4bf")
 [node name="Player" type="Node2D" parent="." unique_id=640842919]
 script = ExtResource("4_kbped")
 
-[node name="Camera2D" type="Camera2D" parent="Player"]
+[node name="Camera2D" type="Camera2D" parent="Player" unique_id=1518093203]
+position = Vector2(-6, 0)
 position_smoothing_enabled = true
 position_smoothing_speed = 8.0
 
