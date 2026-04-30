@@ -1,0 +1,7 @@
+{
+  "languages": {
+    "GDScript": {
+      "semantic_tokens": "off",
+    },
+  },
+}

@@ -1,0 +1,38 @@
+[gd_scene format=3 uid="uid://c7elu4thwikpq"]
+
+[ext_resource type="Script" uid="uid://jsffjgjk2l44" path="res://grid.gd" id="1_0fbet"]
+[ext_resource type="Script" uid="uid://cdxq7w30ajb7w" path="res://sound_bars.gd" id="2_62e2m"]
+[ext_resource type="Script" uid="uid://bps1ps5l2klct" path="res://enemies.gd" id="3_ee4bf"]
+[ext_resource type="Script" uid="uid://dnlmjjr0tv84y" path="res://player.gd" id="4_kbped"]
+[ext_resource type="Script" path="res://beat_manager.gd" id="5_bmgr"]
+
+[sub_resource type="Environment" id="Environment_uchyk"]
+background_mode = 1
+background_color = Color(0.0146821635, 0.015694771, 0.059500597, 1)
+glow_enabled = true
+glow_intensity = 0.8
+glow_bloom = 0.3
+glow_blend_mode = 0
+glow_hdr_threshold = 0.5
+
+[node name="Node2D" type="Node2D" unique_id=1740056951]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=2136379717]
+environment = SubResource("Environment_uchyk")
+
+[node name="Grid" type="Node2D" parent="." unique_id=1115384136]
+script = ExtResource("1_0fbet")
+
+[node name="SoundBars" type="Node2D" parent="." unique_id=2090444731]
+script = ExtResource("2_62e2m")
+
+[node name="Enemies" type="Node2D" parent="." unique_id=1820971810]
+script = ExtResource("3_ee4bf")
+
+[node name="Player" type="Node2D" parent="." unique_id=640842919]
+script = ExtResource("4_kbped")
+
+[node name="BeatManager" type="Node" parent="." unique_id=210667496]
+script = ExtResource("5_bmgr")
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=1604984725]
