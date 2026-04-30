@@ -8,7 +8,6 @@
 
 [sub_resource type="Environment" id="Environment_uchyk"]
 background_mode = 1
-background_color = Color(0, 0, 0, 1)
 glow_enabled = true
 glow_intensity = 0.8
 glow_bloom = 0.3
@@ -28,6 +27,7 @@ script = ExtResource("1_0fbet")
 script = ExtResource("2_62e2m")
 
 [node name="Enemies" type="Node2D" parent="." unique_id=1820971810]
+position = Vector2(-2, 4)
 script = ExtResource("3_ee4bf")
 
 [node name="Player" type="Node2D" parent="." unique_id=640842919]

@@ -14,7 +14,7 @@ const DEPTH         = int(STRIP_SIZE / STEP)
 const BAR_COLOR     = Color(0.0, 0.75, 0.85)
 const BAR_DIM       = Color(0.02, 0.06, 0.08)
 const BORDER_COLOR  = Color(0.0, 0.55, 0.65)
-const STRIP_BG      = Color(0.008, 0.008, 0.04)
+const STRIP_BG      = Color(0.0, 0.0, 0.0)
 
 var h_count: int
 var v_count: int

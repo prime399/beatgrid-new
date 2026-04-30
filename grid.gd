@@ -2,10 +2,10 @@
 extends Node2D
 
 const CELL_SIZE        = 48
-const BASE_COLOR       = Color(0.055, 0.055, 0.157, 1.0)
+const BASE_COLOR       = Color(0.0, 0.0, 0.0, 1.0)
 const GLOW_COLOR       = Color(1.0, 0.902, 0.314, 1.0)
 const LASER_GLOW_COLOR = Color(0.3, 0.6, 1.0)
-const INFLUENCE_RADIUS = 20.0
+const INFLUENCE_RADIUS = 4.0
 const LASER_GLOW_RADIUS = 4.0
 const MAP_W            = 3200.0
 const MAP_H            = 2400.0
