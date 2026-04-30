@@ -4,7 +4,7 @@
 [ext_resource type="Script" uid="uid://cdxq7w30ajb7w" path="res://sound_bars.gd" id="2_62e2m"]
 [ext_resource type="Script" uid="uid://bps1ps5l2klct" path="res://enemies.gd" id="3_ee4bf"]
 [ext_resource type="Script" uid="uid://dnlmjjr0tv84y" path="res://player.gd" id="4_kbped"]
-[ext_resource type="Script" path="res://beat_manager.gd" id="5_bmgr"]
+[ext_resource type="Script" uid="uid://n64nwuxqn8dq" path="res://beat_manager.gd" id="5_bmgr"]
 
 [sub_resource type="Environment" id="Environment_uchyk"]
 background_mode = 1
@@ -31,6 +31,10 @@ script = ExtResource("3_ee4bf")
 
 [node name="Player" type="Node2D" parent="." unique_id=640842919]
 script = ExtResource("4_kbped")
+
+[node name="Camera2D" type="Camera2D" parent="Player"]
+position_smoothing_enabled = true
+position_smoothing_speed = 8.0
 
 [node name="BeatManager" type="Node" parent="." unique_id=210667496]
 script = ExtResource("5_bmgr")

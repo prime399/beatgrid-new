@@ -3,13 +3,14 @@ extends Node2D
 const ENEMY_COUNT = 5
 const SIZE = 10.0
 const ARENA_INSET = 52.0
+const MAP_W = 3200.0
+const MAP_H = 2400.0
 
 var enemies: Array = []
 
 func _ready() -> void:
-	var screen = get_viewport_rect().size
 	var min_pos = Vector2(ARENA_INSET + SIZE * 2, ARENA_INSET + SIZE * 2)
-	var max_pos = screen - min_pos
+	var max_pos = Vector2(MAP_W, MAP_H) - min_pos
 	for i in range(ENEMY_COUNT):
 		enemies.append({
 			"pos": Vector2(
@@ -21,9 +22,8 @@ func _ready() -> void:
 		})
 
 func _process(delta: float) -> void:
-	var screen = get_viewport_rect().size
 	var lo = Vector2(ARENA_INSET + SIZE, ARENA_INSET + SIZE)
-	var hi = screen - lo
+	var hi = Vector2(MAP_W - ARENA_INSET - SIZE, MAP_H - ARENA_INSET - SIZE)
 
 	for e in enemies:
 		e.pos += e.vel * delta
