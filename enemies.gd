@@ -33,36 +33,52 @@ const TRI_SIGHT_RANGE = 500.0
 
 const HEX_SPAWN_CD = 20.0
 const HEX_MAX_MINIONS = 3
+const CHAIN_RANGE = 350.0
 
 var enemies: Array = []
 var projectiles: Array = []
 var particles: Array = []
+var level_active: bool = false
 
 func _ready() -> void:
-	_spawn_initial_enemies()
+	pass
 
-func _spawn_initial_enemies():
-	var spawn_points = _get_scattered_positions(15, 200.0)
-	var tri_count = 8
-	var sqr_count = 5
-	var hex_count = 2
+func clear_all():
+	enemies.clear()
+	projectiles.clear()
+	particles.clear()
+	level_active = false
+	queue_redraw()
 
-	for i in range(tri_count):
-		if i >= spawn_points.size():
-			break
-		enemies.append(_make_triangle(spawn_points[i]))
+func setup_level(level: int):
+	clear_all()
+	level_active = true
+	match level:
+		0: _spawn_level_0()
+		1: _spawn_level_1()
+		2: _spawn_level_2()
 
-	for i in range(sqr_count):
-		var idx = tri_count + i
-		if idx >= spawn_points.size():
-			break
-		enemies.append(_make_square(spawn_points[idx]))
+func _spawn_level_0():
+	var points = _get_scattered_positions(12, 180.0)
+	for p in points:
+		enemies.append(_make_triangle(p))
 
-	for i in range(hex_count):
-		var idx = tri_count + sqr_count + i
-		if idx >= spawn_points.size():
-			break
-		enemies.append(_make_hexagon(spawn_points[idx]))
+func _spawn_level_1():
+	var points = _get_scattered_positions(16, 180.0)
+	for i in range(points.size()):
+		if i < 10:
+			enemies.append(_make_triangle(points[i]))
+		else:
+			enemies.append(_make_square(points[i]))
+
+func _spawn_level_2():
+	var points = _get_scattered_positions(18, 200.0)
+	enemies.append(_make_hexagon(points[0]))
+	enemies.append(_make_hexagon(points[1]))
+	for i in range(2, min(9, points.size())):
+		enemies.append(_make_triangle(points[i]))
+	for i in range(9, min(18, points.size())):
+		enemies.append(_make_square(points[i]))
 
 func _get_scattered_positions(count: int, min_dist: float) -> Array:
 	var positions: Array = []
@@ -90,10 +106,10 @@ func _make_triangle(pos: Vector2) -> Dictionary:
 	var c = TRI_COLORS[randi() % TRI_COLORS.size()]
 	return {
 		"type": "triangle", "pos": pos,
-		"vel": Vector2.from_angle(randf() * TAU) * randf_range(80, 140),
+		"vel": Vector2.from_angle(randf() * TAU) * randf_range(27, 47),
 		"color": c, "size": 10.0, "hp": 1, "max_hp": 1,
 		"flash": 0.0, "damage": 1, "chase": 0.5,
-		"contact_cd": 0.0, "base_speed": randf_range(80, 140),
+		"contact_cd": 0.0, "base_speed": randf_range(27, 47),
 		"shoot_cd": randf_range(0.5, TRI_SHOOT_CD),
 		"angle": randf() * TAU, "owner_id": -1,
 	}
@@ -102,10 +118,10 @@ func _make_square(pos: Vector2) -> Dictionary:
 	var c = SQR_COLORS[randi() % SQR_COLORS.size()]
 	return {
 		"type": "square", "pos": pos,
-		"vel": Vector2.from_angle(randf() * TAU) * randf_range(50, 90),
+		"vel": Vector2.from_angle(randf() * TAU) * randf_range(17, 30),
 		"color": c, "size": 12.0, "hp": 2, "max_hp": 2,
 		"flash": 0.0, "damage": 2, "chase": 0.3,
-		"contact_cd": 0.0, "base_speed": randf_range(50, 90),
+		"contact_cd": 0.0, "base_speed": randf_range(17, 30),
 		"shoot_cd": 0.0, "angle": randf() * TAU, "owner_id": -1,
 	}
 
@@ -121,17 +137,70 @@ func _make_hexagon(pos: Vector2) -> Dictionary:
 		"minion_count": 0, "hex_id": randi(), "owner_id": -1,
 	}
 
-func damage_in_line(start: Vector2, end: Vector2, hit_radius: float, damage: int):
-	var to_remove = []
-	for e in enemies:
-		var dist = _point_to_segment_dist(e.pos, start, end)
-		if dist <= hit_radius + e.size:
-			e.hp -= damage
-			e.flash = 0.15
-			if e.hp <= 0:
-				to_remove.append(e)
+func chain_laser(start: Vector2, end: Vector2, hit_radius: float, damage: int) -> Array:
+	var segments: Array = []
+	var hit_list: Array = []
+
+	var first = _find_first_hit(start, end, hit_radius, hit_list)
+	if first == null:
+		segments.append({"from": start, "to": end})
+		return segments
+
+	segments.append({"from": start, "to": first.pos})
+	first.hp -= damage
+	first.flash = 0.15
+	hit_list.append(first)
+
+	var current = first
+	for _i in range(20):
+		var next = _find_nearest_enemy(current.pos, CHAIN_RANGE, hit_list)
+		if next == null:
+			break
+		segments.append({"from": current.pos, "to": next.pos})
+		next.hp -= damage
+		next.flash = 0.15
+		hit_list.append(next)
+		current = next
+
+	var to_remove: Array = []
+	for e in hit_list:
+		if e.hp <= 0:
+			to_remove.append(e)
 	for e in to_remove:
 		_on_enemy_death(e)
+
+	return segments
+
+func _find_first_hit(start: Vector2, end: Vector2, hit_radius: float, exclude: Array):
+	var best = null
+	var best_dist = INF
+	var dir = (end - start)
+	var line_len = dir.length()
+	if line_len < 1.0:
+		return null
+	dir = dir / line_len
+	for e in enemies:
+		if e in exclude:
+			continue
+		var seg_dist = _point_to_segment_dist(e.pos, start, end)
+		if seg_dist <= hit_radius + e.size:
+			var proj = (e.pos - start).dot(dir)
+			if proj >= 0 and proj < best_dist:
+				best_dist = proj
+				best = e
+	return best
+
+func _find_nearest_enemy(from_pos: Vector2, max_range: float, exclude: Array):
+	var best = null
+	var best_dist = INF
+	for e in enemies:
+		if e in exclude:
+			continue
+		var d = from_pos.distance_to(e.pos)
+		if d < max_range and d < best_dist:
+			best_dist = d
+			best = e
+	return best
 
 func repel_from_line(a: Vector2, b: Vector2, thickness: float, push_dir: Vector2, _push_force: float, delta: float):
 	var push_dist = 48.0 * 2.5
@@ -202,6 +271,11 @@ func _process(delta: float) -> void:
 
 	_process_projectiles(delta, player_pos, player_node)
 	_process_particles(delta)
+
+	if level_active and enemies.size() == 0 and particles.size() == 0:
+		level_active = false
+		get_node("..").on_level_cleared()
+
 	queue_redraw()
 
 func _process_hexagon(e: Dictionary, _player_pos: Vector2, delta: float):

@@ -11,8 +11,7 @@ const MAP_W            = 3200.0
 const MAP_H            = 2400.0
 
 var player_pos: Vector2 = Vector2(-9999, -9999)
-var laser_start: Vector2 = Vector2.ZERO
-var laser_end: Vector2 = Vector2.ZERO
+var laser_segments: Array = []
 var laser_alpha: float = 0.0
 var laser_fade_total: float = 0.0
 
@@ -23,9 +22,8 @@ func _process(delta: float) -> void:
 			laser_alpha = 0.0
 		queue_redraw()
 
-func set_laser(start: Vector2, end: Vector2, fade_time: float):
-	laser_start = start
-	laser_end = end
+func set_chain_laser(segments: Array, fade_time: float):
+	laser_segments = segments
 	laser_alpha = 1.0
 	laser_fade_total = fade_time
 	queue_redraw()
@@ -62,11 +60,16 @@ func _get_line_color(segment_mid: Vector2) -> Color:
 		color = color.lerp(GLOW_COLOR, t)
 
 	if laser_alpha > 0.0:
-		var laser_dist = _point_to_segment_dist(segment_mid, laser_start, laser_end) / CELL_SIZE
-		if laser_dist < LASER_GLOW_RADIUS:
-			var lt = (1.0 - laser_dist / LASER_GLOW_RADIUS) * laser_alpha
-			lt = lt * lt
-			color = color.lerp(LASER_GLOW_COLOR, lt)
+		var best_lt = 0.0
+		for seg in laser_segments:
+			var laser_dist = _point_to_segment_dist(segment_mid, seg.from, seg.to) / CELL_SIZE
+			if laser_dist < LASER_GLOW_RADIUS:
+				var lt = (1.0 - laser_dist / LASER_GLOW_RADIUS) * laser_alpha
+				lt = lt * lt
+				if lt > best_lt:
+					best_lt = lt
+		if best_lt > 0.0:
+			color = color.lerp(LASER_GLOW_COLOR, best_lt)
 
 	return color
 

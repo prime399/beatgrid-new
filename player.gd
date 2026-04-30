@@ -38,6 +38,16 @@ var invuln_timer: float = 0.0
 func _ready() -> void:
 	position = Vector2(MAP_W / 2.0, MAP_H / 2.0)
 
+func reset_player():
+	position = Vector2(MAP_W / 2.0, MAP_H / 2.0)
+	hp = MAX_HP
+	invuln_timer = 0.0
+	laser_active = false
+	laser_segments = []
+	laser_timer = 0.0
+	shield_active = false
+	shield_timer = 0.0
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_A:
