@@ -14,9 +14,14 @@ const LASER_FADE_TIME = 0.3
 const SHIELD_MIN_W = 40.0
 const SHIELD_MAX_W = 180.0
 const SHIELD_TRAVEL = 500.0
-const SHIELD_DURATION = 01.25
+const SHIELD_DURATION = 1.25
 const SHIELD_PUSH = 500.0
 const SHIELD_HIT_THICKNESS = 25.0
+
+const MAX_BARS = 4
+const HP_PER_BAR = 3
+const MAX_HP = MAX_BARS * HP_PER_BAR
+const INVULN_TIME = 0.8
 
 var laser_active: bool = false
 var laser_start: Vector2
@@ -28,6 +33,9 @@ var shield_timer: float = 0.0
 var shield_dir: Vector2
 var shield_origin: Vector2
 
+var hp: int = MAX_HP
+var invuln_timer: float = 0.0
+
 func _ready() -> void:
 	position = Vector2(MAP_W / 2.0, MAP_H / 2.0)
 
@@ -37,6 +45,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			_fire_laser()
 		elif event.keycode == KEY_S and not shield_active:
 			_fire_shield()
+
+func take_damage(amount: int):
+	if invuln_timer > 0.0:
+		return
+	hp = max(hp - amount, 0)
+	invuln_timer = INVULN_TIME
 
 func _fire_laser():
 	var mouse_world = get_global_mouse_position()
@@ -107,6 +121,9 @@ func _process(delta: float) -> void:
 			get_node("../Enemies").repel_from_line(
 				state.a, state.b, SHIELD_HIT_THICKNESS, shield_dir, SHIELD_PUSH, delta)
 
+	if invuln_timer > 0.0:
+		invuln_timer -= delta
+
 	queue_redraw()
 
 func _clamp_rounded_rect(pos: Vector2, margin: float) -> Vector2:
@@ -142,8 +159,10 @@ func _clamp_rounded_rect(pos: Vector2, margin: float) -> Vector2:
 	return pos
 
 func _draw() -> void:
-	draw_circle(Vector2.ZERO, RADIUS, Color.WHITE)
-	draw_arc(Vector2.ZERO, RADIUS, 0, TAU, 32, Color(0.7, 0.7, 1.0), 1.5)
+	var blink = invuln_timer > 0.0 and int(invuln_timer * 10) % 2 == 0
+	if not blink:
+		draw_circle(Vector2.ZERO, RADIUS, Color.WHITE)
+		draw_arc(Vector2.ZERO, RADIUS, 0, TAU, 32, Color(0.7, 0.7, 1.0), 1.5)
 
 	if laser_active:
 		var alpha = laser_timer / LASER_FADE_TIME
@@ -162,3 +181,24 @@ func _draw() -> void:
 		draw_line(la, lb, Color(0.3, 0.8, 1.0, alpha * 0.15), 20.0)
 		draw_line(la, lb, Color(0.4, 0.85, 1.0, alpha * 0.5), 6.0)
 		draw_line(la, lb, Color(0.7, 0.95, 1.0, alpha), 2.0)
+
+	_draw_hp_bars()
+
+func _draw_hp_bars():
+	var bar_w = 10.0
+	var bar_h = 4.0
+	var gap = 2.0
+	var total_w = MAX_BARS * bar_w + (MAX_BARS - 1) * gap
+	var start_x = -total_w / 2.0
+	var y = RADIUS + 8.0
+
+	for i in range(MAX_BARS):
+		var x = start_x + i * (bar_w + gap)
+		var bar_hp = clamp(hp - i * HP_PER_BAR, 0, HP_PER_BAR)
+		var fill = float(bar_hp) / HP_PER_BAR
+
+		draw_rect(Rect2(x, y, bar_w, bar_h), Color(0.15, 0.15, 0.15))
+		if fill > 0:
+			var c = Color(0.2, 1.0, 0.4) if fill > 0.33 else Color(1.0, 0.3, 0.2)
+			draw_rect(Rect2(x, y, bar_w * fill, bar_h), c)
+		draw_rect(Rect2(x, y, bar_w, bar_h), Color(0.5, 0.5, 0.5), false, 1.0)
