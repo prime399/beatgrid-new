@@ -8,12 +8,13 @@
 
 [sub_resource type="Environment" id="Environment_uchyk"]
 background_mode = 1
-background_color = Color(0.0146821635, 0.015694771, 0.059500597, 1)
+background_color = Color(0, 0, 0, 1)
 glow_enabled = true
 glow_intensity = 0.8
 glow_bloom = 0.3
 glow_blend_mode = 0
 glow_hdr_threshold = 0.5
+fog_light_color = Color(0, 0, 0, 1)
 
 [node name="Node2D" type="Node2D" unique_id=1740056951]
 

@@ -1,35 +1,69 @@
 extends Node2D
 
-const ENEMY_COUNT = 5
-const SIZE = 10.0
 const MAP_W = 3200.0
 const MAP_H = 2400.0
 const ARENA_INSET = 52.0
 const CORNER_R = 95.0
 
+const ENEMY_TYPES = [
+	{"hp": 1, "size": 8.0,  "speed_min": 80.0,  "speed_max": 150.0, "hue": 0.0},
+	{"hp": 2, "size": 12.0, "speed_min": 60.0,  "speed_max": 120.0, "hue": 0.08},
+	{"hp": 3, "size": 16.0, "speed_min": 50.0,  "speed_max": 100.0, "hue": 0.45},
+	{"hp": 5, "size": 22.0, "speed_min": 30.0,  "speed_max": 70.0,  "hue": 0.75},
+]
+
 var enemies: Array = []
+var flash_timers: Dictionary = {}
 
 func _ready() -> void:
 	var center = Vector2(MAP_W / 2.0, MAP_H / 2.0)
-	for i in range(ENEMY_COUNT):
-		var offset = Vector2(randf_range(-400, 400), randf_range(-300, 300))
-		enemies.append({
+	for i in range(10):
+		var etype = ENEMY_TYPES[i % ENEMY_TYPES.size()]
+		var offset = Vector2(randf_range(-500, 500), randf_range(-400, 400))
+		var e = {
 			"pos": center + offset,
-			"vel": Vector2.from_angle(randf() * TAU) * randf_range(60.0, 140.0),
-			"color": Color.from_hsv(float(i) / ENEMY_COUNT, 0.9, 1.0),
-		})
+			"vel": Vector2.from_angle(randf() * TAU) * randf_range(etype.speed_min, etype.speed_max),
+			"color": Color.from_hsv(etype.hue, 0.85, 1.0),
+			"size": etype.size,
+			"hp": etype.hp,
+			"max_hp": etype.hp,
+			"flash": 0.0,
+		}
+		enemies.append(e)
+
+func damage_in_line(start: Vector2, end: Vector2, hit_radius: float, damage: int):
+	var to_remove = []
+	for e in enemies:
+		var dist = _point_to_segment_dist(e.pos, start, end)
+		if dist <= hit_radius + e.size:
+			e.hp -= damage
+			e.flash = 0.15
+			if e.hp <= 0:
+				to_remove.append(e)
+	for e in to_remove:
+		enemies.erase(e)
+
+func _point_to_segment_dist(p: Vector2, a: Vector2, b: Vector2) -> float:
+	var ab = b - a
+	var len_sq = ab.length_squared()
+	if len_sq < 0.001:
+		return p.distance_to(a)
+	var t = clamp((p - a).dot(ab) / len_sq, 0.0, 1.0)
+	return p.distance_to(a + ab * t)
 
 func _process(delta: float) -> void:
 	for e in enemies:
 		var old_pos = e.pos
 		e.pos += e.vel * delta
-		e.pos = _clamp_rounded_rect(e.pos, SIZE)
+		e.pos = _clamp_rounded_rect(e.pos, e.size)
 		if e.pos != old_pos + e.vel * delta:
 			var diff = e.pos - old_pos
 			if abs(diff.x) < 0.01:
 				e.vel.x *= -1
 			if abs(diff.y) < 0.01:
 				e.vel.y *= -1
+		if e.flash > 0.0:
+			e.flash -= delta
 
 	queue_redraw()
 
@@ -67,5 +101,17 @@ func _clamp_rounded_rect(pos: Vector2, margin: float) -> Vector2:
 
 func _draw() -> void:
 	for e in enemies:
-		draw_circle(e.pos, SIZE, e.color)
-		draw_arc(e.pos, SIZE, 0, TAU, 24, Color.WHITE, 1.0)
+		var c = e.color
+		if e.flash > 0.0:
+			c = Color.WHITE
+		draw_circle(e.pos, e.size, c)
+		draw_arc(e.pos, e.size, 0, TAU, 24, Color.WHITE, 1.0)
+
+		if e.max_hp > 1:
+			var bar_w = e.size * 2.0
+			var bar_h = 3.0
+			var bar_x = e.pos.x - bar_w / 2.0
+			var bar_y = e.pos.y - e.size - 6.0
+			draw_rect(Rect2(bar_x, bar_y, bar_w, bar_h), Color(0.2, 0.2, 0.2))
+			var fill = float(e.hp) / e.max_hp
+			draw_rect(Rect2(bar_x, bar_y, bar_w * fill, bar_h), Color(0.0, 1.0, 0.4))
